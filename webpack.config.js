@@ -1,56 +1,90 @@
 const path = require('path');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
+const nodeExternals = require('webpack-node-externals');
 
-const config = {
+const common = {
+  module: {
+      rules: [
+        {
+          test: /\.jsx?$/,
+          loader: 'babel-loader',
+          include: [path.resolve(__dirname, 'src')],
+          options: {
+            presets: [
+              '@babel/preset-env',
+              '@babel/preset-react'
+            ]
+          }
+        }
+      ]
+  },
+};
+
+const clientConfig = {
+  ...common,
   mode: 'development',
+  name: 'client',
+  target: 'web',
 
   entry: {
-    client: [
-      '@babel/polyfill',
-      './src/client.js'
-    ]
+      client: [
+          '@babel/polyfill',
+          './src/client.js'
+      ]
   },
 
   output: {
-    path: path.resolve(__dirname, 'build'),
-    filename: '[name].js'
+      path: path.resolve(__dirname, 'build'),
+      filename: '[name].js'
   },
-
-  module: {
-    rules: [
-      {
-        test: /\.jsx?$/,
-        loader: 'babel-loader',
-        include: [path.resolve(__dirname, 'src')],
-        query: {
-          presets: [
-            '@babel/preset-env',
-            '@babel/preset-react'
-          ]
-        }
-      }
-    ]
-  },
-
-  plugins: [
-    new HtmlWebpackPlugin({template: path.resolve(__dirname, 'src', 'index.html')})
-  ],
 
   optimization: {
-    splitChunks: {
-      cacheGroups: {
-        vendor: {
-          chunks: 'initial',
-          name: 'vendor',
-          test: module => /node_modules/.test(module.resource),
-          enforce: true
+      splitChunks: {
+        cacheGroups: {
+          vendor: {
+            chunks: 'initial',
+            name: 'vendor',
+            test: module => /node_modules/.test(module.resource),
+            enforce: true
+          }
         }
       }
-    }
-  },
-
-  devtool: 'cheap-module-source-map',
-
+    },
+  
+    devtool: 'cheap-module-source-map',
+    // node: {
+    //     fs: 'empty',
+    //     net: 'empty',
+    //     tls: 'empty'
+    // }
 };
 
-module.exports = config;
+const serverConfig = {
+  ...common,
+  mode: 'development',
+  name: 'server',
+  target: 'node',
+  externals: [nodeExternals()],
+
+  entry: {
+      server: [
+          '@babel/polyfill', path.resolve(__dirname, 'src', 'server.js')
+      ]
+  },
+
+  output: {
+      path: path.resolve(__dirname, 'build'),
+      filename: 'server.js'
+  },
+  
+    devtool: 'cheap-module-source-map',
+    node: {
+        // console: false,
+        global: false,
+        // process: false,
+        // Buffer: false,
+        __dirname: false,
+        __filename: false
+    }
+}
+
+module.exports = [clientConfig, serverConfig];
